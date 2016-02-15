@@ -9,6 +9,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteQueryBuilder;
 import android.net.Uri;
 import android.util.Log;
+import android.widget.Toast;
 
 /**
  * Created by saj on 24/12/14.
@@ -247,6 +248,9 @@ public class BookProvider extends ContentProvider {
     public int delete(Uri uri, String selection, String[] selectionArgs) {
         final SQLiteDatabase db = dbHelper.getWritableDatabase();
         final int match = uriMatcher.match(uri);
+
+        if (null == selection) selection = "1";
+
         int rowsDeleted;
         switch (match) {
             case BOOK:
@@ -271,8 +275,11 @@ public class BookProvider extends ContentProvider {
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
         }
         // Because a null deletes all rows
-        if (selection == null || rowsDeleted != 0) {
+        if (rowsDeleted != 0) {
             getContext().getContentResolver().notifyChange(uri, null);
+        }
+        else {
+            Toast.makeText(getContext(), "Unable", Toast.LENGTH_SHORT).show();
         }
         return rowsDeleted;
     }

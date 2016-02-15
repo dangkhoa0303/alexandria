@@ -17,6 +17,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import it.jaschke.alexandria.data.AlexandriaContract;
 import it.jaschke.alexandria.services.BookService;
@@ -58,6 +59,7 @@ public class BookDetail extends Fragment implements LoaderManager.LoaderCallback
                 Intent bookIntent = new Intent(getActivity(), BookService.class);
                 bookIntent.putExtra(BookService.EAN, ean);
                 bookIntent.setAction(BookService.DELETE_BOOK);
+                Toast.makeText(getActivity(), "Deleted", Toast.LENGTH_SHORT).show();
                 getActivity().startService(bookIntent);
                 getActivity().getSupportFragmentManager().popBackStack();
             }

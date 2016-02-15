@@ -70,17 +70,20 @@ public class ListOfBooks extends Fragment implements LoaderManager.LoaderCallbac
             public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
                 Cursor cursor = bookListAdapter.getCursor();
                 if (cursor != null && cursor.moveToPosition(position)) {
-                    ((Callback)getActivity())
+                    ((Callback) getActivity())
                             .onItemSelected(cursor.getString(cursor.getColumnIndex(AlexandriaContract.BookEntry._ID)));
                 }
             }
         });
+
+        bookListAdapter.notifyDataSetChanged();
 
         return rootView;
     }
 
     private void restartLoader(){
         getLoaderManager().restartLoader(LOADER_ID, null, this);
+        bookListAdapter.notifyDataSetChanged();
     }
 
     @Override

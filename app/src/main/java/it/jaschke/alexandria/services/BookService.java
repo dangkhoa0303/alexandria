@@ -2,11 +2,13 @@ package it.jaschke.alexandria.services;
 
 import android.app.IntentService;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
+import android.widget.Toast;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -66,6 +68,9 @@ public class BookService extends IntentService {
             Uri uri = AlexandriaContract.BookEntry.buildBookUri(Long.parseLong(ean));
             getApplication().getContentResolver().delete(uri, null, null);
 
+        }
+        else {
+            Toast.makeText(getApplicationContext(), "Unable", Toast.LENGTH_SHORT).show();
         }
     }
 

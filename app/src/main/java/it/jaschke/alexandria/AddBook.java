@@ -14,6 +14,7 @@ import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -38,6 +39,8 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
 
     private String mScanFormat = "Format:";
     private String mScanContents = "Contents:";
+
+    private int BOOK_DELETED = 1;
 
     public AddBook() {
     }
@@ -99,8 +102,9 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
 
                 IntentIntegrator integrator = IntentIntegrator.forSupportFragment(AddBook.this);
 
-                integrator.setOrientationLocked(true)
+                integrator.setOrientationLocked(false)
                         .setPrompt("Please scan book ISBN BarCode")
+                        .setBeepEnabled(false)
                         .initiateScan();
 
             }
@@ -109,7 +113,15 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
         rootView.findViewById(R.id.save_button).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                ean.setText("");
+
+                // check if the book is deleted or not
+                if (BOOK_DELETED == 1) {
+                    ean.setText("");
+                    Toast.makeText(getActivity(), "Saved", Toast.LENGTH_SHORT).show();
+                }
+                else {
+                    ean.setText("");
+                }
             }
         });
 
@@ -117,10 +129,18 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
             @Override
             public void onClick(View view) {
                 Intent bookIntent = new Intent(getActivity(), BookService.class);
-                bookIntent.putExtra(BookService.EAN, ean.getText().toString());
-                bookIntent.setAction(BookService.DELETE_BOOK);
-                getActivity().startService(bookIntent);
-                ean.setText("");
+
+                // when book is deleted, BACK_BUTTON is pressed, service layout is recalled,
+                // if "Cancel" button (R.id.delete_button) is pressed, app crashes
+                if (!ean.getText().toString().equals("")) {
+                    bookIntent.putExtra(BookService.EAN, ean.getText().toString());
+                    bookIntent.setAction(BookService.DELETE_BOOK);
+                    getActivity().startService(bookIntent);
+                    ean.setText("");
+                } else {
+                    BOOK_DELETED = 0;
+                    Toast.makeText(getActivity(), "This book has already been deleted!", Toast.LENGTH_SHORT).show();
+                }
             }
         });
 
@@ -142,10 +162,19 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
         // app will crash due to data = null
         if (scanResult != null && data != null) {
 
-            if (scanResult.getContents().substring(0, 4).equals("http")) {
-                Toast.makeText(getActivity(), "You are scanning an QR code, not a BarCode", Toast.LENGTH_SHORT).show();
-            } else {
-                ean.setText(scanResult.getContents());
+            // check internet connection after receiving the barcode
+            if (Utility.isNetworkAvailable(getActivity())) {
+
+                // if users scan QR code, app will crash because the result is A WEB LINK INSTEAD OF A STRING OF NUMBERS
+                // therefore, make sure users are scanning BARCODE prevents the app from crashing
+                if (scanResult.getContents().substring(0, 4).equals("http")) {
+                    Toast.makeText(getActivity(), "You are scanning an QR code, not a BarCode", Toast.LENGTH_SHORT).show();
+                } else {
+                    ean.setText(scanResult.getContents());
+                }
+            }
+            else {
+                Toast.makeText(getActivity(), "No internet connection", Toast.LENGTH_SHORT).show();
             }
 
         } else {
@@ -183,32 +212,38 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
             return;
         }
 
+        // on the first time of running, app causes crash due to null data when SPLIT COMMAND is called
+        if (data!=null) {
         String bookTitle = data.getString(data.getColumnIndex(AlexandriaContract.BookEntry.TITLE));
         ((TextView) rootView.findViewById(R.id.bookTitle)).setText(bookTitle);
 
         String bookSubTitle = data.getString(data.getColumnIndex(AlexandriaContract.BookEntry.SUBTITLE));
         ((TextView) rootView.findViewById(R.id.bookSubTitle)).setText(bookSubTitle);
 
-        String authors = data.getString(data.getColumnIndex(AlexandriaContract.AuthorEntry.AUTHOR));
-        String[] authorsArr = authors.split(",");
-        ((TextView) rootView.findViewById(R.id.authors)).setLines(authorsArr.length);
-        ((TextView) rootView.findViewById(R.id.authors)).setText(authors.replace(",", "\n"));
-        String imgUrl = data.getString(data.getColumnIndex(AlexandriaContract.BookEntry.IMAGE_URL));
-        if (Patterns.WEB_URL.matcher(imgUrl).matches()) {
+            String authors = data.getString(data.getColumnIndex(AlexandriaContract.AuthorEntry.AUTHOR));
+            String[] authorsArr = authors.split(",");
+            ((TextView) rootView.findViewById(R.id.authors)).setLines(authorsArr.length);
+            ((TextView) rootView.findViewById(R.id.authors)).setText(authors.replace(",", "\n"));
+            String imgUrl = data.getString(data.getColumnIndex(AlexandriaContract.BookEntry.IMAGE_URL));
+            if (Patterns.WEB_URL.matcher(imgUrl).matches()) {
 
-            Picasso.with(getActivity())
-                    .load(imgUrl)
-                    .into((ImageView) rootView.findViewById(R.id.bookCover));
+                Picasso.with(getActivity())
+                        .load(imgUrl)
+                        .into((ImageView) rootView.findViewById(R.id.bookCover));
 
-            rootView.findViewById(R.id.bookCover).setVisibility(View.VISIBLE);
+                rootView.findViewById(R.id.bookCover).setVisibility(View.VISIBLE);
 
+            }
+
+            String categories = data.getString(data.getColumnIndex(AlexandriaContract.CategoryEntry.CATEGORY));
+            ((TextView) rootView.findViewById(R.id.categories)).setText(categories);
+
+            rootView.findViewById(R.id.save_button).setVisibility(View.VISIBLE);
+            rootView.findViewById(R.id.delete_button).setVisibility(View.VISIBLE);
         }
-
-        String categories = data.getString(data.getColumnIndex(AlexandriaContract.CategoryEntry.CATEGORY));
-        ((TextView) rootView.findViewById(R.id.categories)).setText(categories);
-
-        rootView.findViewById(R.id.save_button).setVisibility(View.VISIBLE);
-        rootView.findViewById(R.id.delete_button).setVisibility(View.VISIBLE);
+        else {
+            Toast.makeText(getActivity(), "Can not get data!", Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override
