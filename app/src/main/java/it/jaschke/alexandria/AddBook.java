@@ -14,7 +14,6 @@ import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -40,7 +39,7 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
     private String mScanFormat = "Format:";
     private String mScanContents = "Contents:";
 
-    private int BOOK_DELETED = 1;
+    private int BOOK_EXECUTED = 1;
 
     public AddBook() {
     }
@@ -115,11 +114,10 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
             public void onClick(View view) {
 
                 // check if the book is deleted or not
-                if (BOOK_DELETED == 1) {
+                if (BOOK_EXECUTED == 1) {
                     ean.setText("");
                     Toast.makeText(getActivity(), "Saved", Toast.LENGTH_SHORT).show();
-                }
-                else {
+                } else {
                     ean.setText("");
                 }
             }
@@ -138,8 +136,8 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
                     getActivity().startService(bookIntent);
                     ean.setText("");
                 } else {
-                    BOOK_DELETED = 0;
-                    Toast.makeText(getActivity(), "This book has already been deleted!", Toast.LENGTH_SHORT).show();
+                    BOOK_EXECUTED = 0;
+                    Toast.makeText(getActivity(), "This book has already been executed!", Toast.LENGTH_SHORT).show();
                 }
             }
         });
@@ -170,10 +168,11 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
                 if (scanResult.getContents().substring(0, 4).equals("http")) {
                     Toast.makeText(getActivity(), "You are scanning an QR code, not a BarCode", Toast.LENGTH_SHORT).show();
                 } else {
+                    // dont need to start FETCH_BOOK service again in here, when ean (EditText) is set with the barcode
+                    // BookService is immediately called in the method afterTextChanged above
                     ean.setText(scanResult.getContents());
                 }
-            }
-            else {
+            } else {
                 Toast.makeText(getActivity(), "No internet connection", Toast.LENGTH_SHORT).show();
             }
 
@@ -212,18 +211,26 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
             return;
         }
 
-        // on the first time of running, app causes crash due to null data when SPLIT COMMAND is called
-        if (data!=null) {
-        String bookTitle = data.getString(data.getColumnIndex(AlexandriaContract.BookEntry.TITLE));
-        ((TextView) rootView.findViewById(R.id.bookTitle)).setText(bookTitle);
+        // make sure the app wont crash if data is NULL
+        if (data != null) {
+            String bookTitle = data.getString(data.getColumnIndex(AlexandriaContract.BookEntry.TITLE));
+            ((TextView) rootView.findViewById(R.id.bookTitle)).setText(bookTitle);
 
-        String bookSubTitle = data.getString(data.getColumnIndex(AlexandriaContract.BookEntry.SUBTITLE));
-        ((TextView) rootView.findViewById(R.id.bookSubTitle)).setText(bookSubTitle);
+            String bookSubTitle = data.getString(data.getColumnIndex(AlexandriaContract.BookEntry.SUBTITLE));
+            ((TextView) rootView.findViewById(R.id.bookSubTitle)).setText(bookSubTitle);
 
             String authors = data.getString(data.getColumnIndex(AlexandriaContract.AuthorEntry.AUTHOR));
-            String[] authorsArr = authors.split(",");
-            ((TextView) rootView.findViewById(R.id.authors)).setLines(authorsArr.length);
-            ((TextView) rootView.findViewById(R.id.authors)).setText(authors.replace(",", "\n"));
+
+            // if authors returns NULL then app crashes when it executes these following lines
+            if (authors != null) {
+                String[] authorsArr = authors.split(",");
+                ((TextView) rootView.findViewById(R.id.authors)).setLines(authorsArr.length);
+                ((TextView) rootView.findViewById(R.id.authors)).setText(authors.replace(",", "\n"));
+            } else {
+                ((TextView) rootView.findViewById(R.id.authors)).setLines(1);
+                ((TextView) rootView.findViewById(R.id.authors)).setText("Unknown author");
+            }
+
             String imgUrl = data.getString(data.getColumnIndex(AlexandriaContract.BookEntry.IMAGE_URL));
             if (Patterns.WEB_URL.matcher(imgUrl).matches()) {
 
@@ -240,8 +247,7 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
 
             rootView.findViewById(R.id.save_button).setVisibility(View.VISIBLE);
             rootView.findViewById(R.id.delete_button).setVisibility(View.VISIBLE);
-        }
-        else {
+        } else {
             Toast.makeText(getActivity(), "Can not get data!", Toast.LENGTH_SHORT).show();
         }
     }

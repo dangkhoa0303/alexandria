@@ -29,7 +29,7 @@ import it.jaschke.alexandria.data.AlexandriaContract;
 /**
  * An {@link IntentService} subclass for handling asynchronous task requests in
  * a service on a separate handler thread.
- * <p>
+ * <p/>
  */
 public class BookService extends IntentService {
 
@@ -64,12 +64,9 @@ public class BookService extends IntentService {
      */
     private void deleteBook(String ean) {
         if (ean != null) {
-
             Uri uri = AlexandriaContract.BookEntry.buildBookUri(Long.parseLong(ean));
             getApplication().getContentResolver().delete(uri, null, null);
-
-        }
-        else {
+        } else {
             Toast.makeText(getApplicationContext(), "Unable", Toast.LENGTH_SHORT).show();
         }
     }
