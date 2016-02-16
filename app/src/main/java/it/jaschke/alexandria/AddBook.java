@@ -1,8 +1,11 @@
 package it.jaschke.alexandria;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
@@ -166,7 +169,7 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
                 // if users scan QR code, app will crash because the result is A WEB LINK INSTEAD OF A STRING OF NUMBERS
                 // therefore, make sure users are scanning BARCODE prevents the app from crashing
                 if (scanResult.getContents().substring(0, 4).equals("http")) {
-                    Toast.makeText(getActivity(), "You are scanning an QR code, not a BarCode", Toast.LENGTH_SHORT).show();
+                    openWebView(scanResult.getContents());
                 } else {
                     // dont need to start FETCH_BOOK service again in here, when ean (EditText) is set with the barcode
                     // BookService is immediately called in the method afterTextChanged above
@@ -180,6 +183,32 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
             super.onActivityResult(requestCode, resultCode, data);
             Log.v("AddBook", "No information");
         }
+    }
+
+    public void openWebView(String scanResult) {
+
+        final String url = scanResult;
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+        builder.setMessage("You are scanning an QR code, not a BarCode. Do you want to open this website ?")
+                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        Intent webIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+
+                        if (webIntent.resolveActivity(getActivity().getPackageManager()) != null) {
+                            startActivity(webIntent);
+                        }
+                    }
+                })
+                .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        dialogInterface.dismiss();
+                    }
+                });
+        AlertDialog alertDialog = builder.create();
+        alertDialog.show();
     }
 
     private void restartLoader() {
