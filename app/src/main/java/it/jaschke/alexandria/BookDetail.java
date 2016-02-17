@@ -69,7 +69,6 @@ public class BookDetail extends Fragment implements LoaderManager.LoaderCallback
         return rootView;
     }
 
-
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         inflater.inflate(R.menu.book_detail, menu);
@@ -77,12 +76,17 @@ public class BookDetail extends Fragment implements LoaderManager.LoaderCallback
         MenuItem menuItem = menu.findItem(R.id.action_share);
         shareActionProvider = (ShareActionProvider) MenuItemCompat.getActionProvider(menuItem);
 
-        // shareActionProvider is recreated on screen rotation => app works properly
+        if (bookTitle != null) {
+            shareActionProvider.setShareIntent(createShareIntent());
+        }
+    }
+
+    public Intent createShareIntent() {
         Intent shareIntent = new Intent(Intent.ACTION_SEND);
         shareIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_DOCUMENT);
         shareIntent.setType("text/plain");
         shareIntent.putExtra(Intent.EXTRA_TEXT, getString(R.string.share_text) + bookTitle);
-        shareActionProvider.setShareIntent(shareIntent);
+        return shareIntent;
     }
 
     @Override
@@ -107,7 +111,6 @@ public class BookDetail extends Fragment implements LoaderManager.LoaderCallback
         ((TextView) rootView.findViewById(R.id.fullBookTitle)).setText(bookTitle);
 
         // if these codes are here, on screen rotation, shareActionProvider is set on null object => app crashes
-
         /*Intent shareIntent = new Intent(Intent.ACTION_SEND);
         shareIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_DOCUMENT);
         shareIntent.setType("text/plain");
@@ -127,8 +130,7 @@ public class BookDetail extends Fragment implements LoaderManager.LoaderCallback
             String[] authorsArr = authors.split(",");
             ((TextView) rootView.findViewById(R.id.authors)).setLines(authorsArr.length);
             ((TextView) rootView.findViewById(R.id.authors)).setText(authors.replace(",", "\n"));
-        }
-        else {
+        } else {
             ((TextView) rootView.findViewById(R.id.authors)).setLines(1);
             ((TextView) rootView.findViewById(R.id.authors)).setText("Unknown author");
         }
@@ -148,6 +150,11 @@ public class BookDetail extends Fragment implements LoaderManager.LoaderCallback
 
         if (rootView.findViewById(R.id.right_container) != null) {
             rootView.findViewById(R.id.backButton).setVisibility(View.INVISIBLE);
+        }
+
+        // If onCreateOptionsMenu has already happened, we need to update the share intent now.
+        if (shareActionProvider != null) {
+            shareActionProvider.setShareIntent(createShareIntent());
         }
 
     }
