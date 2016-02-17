@@ -168,7 +168,7 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
 
                 // if users scan QR code, app will crash because the result is A WEB LINK INSTEAD OF A STRING OF NUMBERS
                 // therefore, make sure users are scanning BARCODE prevents the app from crashing
-                if (scanResult.getContents().substring(0, 4).equals("http")) {
+                if (checkQRCode(scanResult.getContents())) {
                     openWebView(scanResult.getContents());
                 } else {
                     // dont need to start FETCH_BOOK service again in here, when ean (EditText) is set with the barcode
@@ -183,6 +183,15 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
             super.onActivityResult(requestCode, resultCode, data);
             Log.v("AddBook", "No information");
         }
+    }
+
+    public boolean checkQRCode(String s) {
+        for (int i = 0; i < s.length(); i++) {
+            if (s.charAt(i) == '/') {
+                return true;
+            }
+        }
+        return false;
     }
 
     public void openWebView(String scanResult) {
@@ -261,10 +270,12 @@ public class AddBook extends Fragment implements LoaderManager.LoaderCallbacks<C
             }
 
             String imgUrl = data.getString(data.getColumnIndex(AlexandriaContract.BookEntry.IMAGE_URL));
-            if (Patterns.WEB_URL.matcher(imgUrl).matches()) {
+            if (Patterns.WEB_URL.matcher(imgUrl).matches() && !imgUrl.equals("")) {
 
                 Picasso.with(getActivity())
                         .load(imgUrl)
+                        .error(R.drawable.book_error)
+                        .placeholder(R.drawable.book_error)
                         .into((ImageView) rootView.findViewById(R.id.bookCover));
 
                 rootView.findViewById(R.id.bookCover).setVisibility(View.VISIBLE);
