@@ -94,20 +94,6 @@
                         android:textStyle="bold" />
                 </LinearLayout>
 
-                <ImageButton
-                    android:id="@+id/backButton"
-                    style="?android:attr/buttonBarButtonStyle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentEnd="true"
-                    android:layout_alignParentRight="true"
-                    android:layout_alignParentTop="true"
-                    android:layout_gravity="right|top"
-                    android:contentDescription="@string/back_button"
-                    android:onClick="goBack"
-                    android:src="@drawable/ic_action_undo" />
-
-
             </RelativeLayout>
 
         </ScrollView>
